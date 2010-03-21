@@ -1,4 +1,7 @@
 
+var Failure = function (result) {
+    this.failure = result;
+}
 
 var Deferred = function () {
     this.callbacks = [];
@@ -64,7 +67,7 @@ Deferred.prototype = {
 
     errback: function (result) {
         if (!isinstance(result, Failure))
-            result = Failure (result);
+            result = new Failure (result);
         this._start_callbacks (result);
     },
 }
