@@ -5,6 +5,15 @@ var assert = function (test) {
     }
 }
 
+if (typeof Function.prototype.bind == 'undefined') {
+    Function.prototype.bind = function (context) {
+        var fun = this;
+        return function() {
+            return fun.apply(context, arguments);
+        };
+    }
+}
+
 var Failure = function (result) {
     this.failure = result;
 }
@@ -41,20 +50,6 @@ Deferred.prototype = {
         this.addCallbacks(callable, args, callable, args);
     },
 
-    _start_callbacks: function (result) {
-        if (this.started) {
-            throw "OhBugger";
-        }
-        this.started = true;
-        this._continue (result);
-    },
-
-    _continue: function (result) {
-        this.result = result;
-        this._processCallbacks ();
-        return result; // fixme: no idea why im returning result
-    },
-
     _processCallbacks: function () {
         while (this.callbacks.length > 0) {
             // unpack an error and callback from the queue
@@ -67,10 +62,24 @@ Deferred.prototype = {
 
             // if it returns a deferred then add a _continue callback
             if (this.result instanceof Deferred) {
-                this.result.addBoth (this._continue);
+                this.result.addBoth (this._continue.bind (this));
                 break;
             }
         }
+    },
+
+    _continue: function (result) {
+        this.result = result;
+        this._processCallbacks ();
+        return result; // fixme: no idea why im returning result
+    },
+
+    _start_callbacks: function (result) {
+        if (this.started) {
+            throw "OhBugger";
+        }
+        this.started = true;
+        this._continue (result);
     },
 
     callback: function (result) {
@@ -105,6 +114,7 @@ function maybeDeferred (value) {
 
 function async (fn) {
     var process = function (result, g, deferred) {
+
         try {
             while (1) {
                 if (result instanceof Deferred) {
@@ -123,7 +133,6 @@ function async (fn) {
             deferred.callback ();
             return deferred;
         } catch (e) {
-            print ("Unhandled exception: errback();");
             deferred.errback (e);
             return deferred;
         }
@@ -131,25 +140,28 @@ function async (fn) {
 
     return function () {
         g = fn ();
-        g.next ();
-        return process (null, g, new Deferred ());
+        result = g.next ();
+        return process (result, g, new Deferred ());
     }
 }
 
 (function () {
+    print("test_defer_succeed");
     var flag = true;
-    var d = succeed ();
-    d.addCallback (function () {
-        flag = false;
+    var d = succeed (false);
+    d.addCallback (function (result) {
+        flag = result;
     });
     assert (flag == false);
 }) ();
 
-var badger = async (function () {
-    print ("entering badger function and yielding");
-    var a = yield succeed (20);
-    print ("continuing badger function");
-});
+(function () {
+    print("test_async_decorator");
+    var flag = true;
+    async (function () {
+        flag = yield succeed (false);
+    }) ();
+    assert (flag == false);
+}) ();
 
-badger ();
 
