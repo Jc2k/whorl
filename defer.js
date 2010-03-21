@@ -38,7 +38,7 @@ Deferred.prototype = {
             throw "OhBugger";
         }
         this.started = true;
-        self._continue (result);
+        this._continue (result);
     },
 
     _continue: function (result) {
@@ -48,7 +48,7 @@ Deferred.prototype = {
     },
 
     _processCallbacks: function () {
-        while (self.callbacks.length > 0) {
+        while (this.callbacks.length > 0) {
             // unpack an error and callback from the queue
             [cb, eb] = this.callbacks.shift ();
             [callable, args] = this.result instanceof Failure ? cb : eb;
@@ -110,7 +110,7 @@ function async (fn) {
                 }
             }
         } catch (e if e instanceof ReturnValue) {
-            deferred.callback (e.result); // FIXME: Need to capture return value
+            deferred.callback (e.result);
             return deferred;
         } catch (e if e instanceof StopIteration) {
             deferred.callback ();
