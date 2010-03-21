@@ -1,4 +1,10 @@
 
+var assert = function (test) {
+    if (!test) {
+        throw "AssertionFAIL";
+    }
+}
+
 var Failure = function (result) {
     this.failure = result;
 }
@@ -18,6 +24,8 @@ Deferred.prototype = {
         cb = [callback, args ? args : []];
         eb = [callback, eargs ? args : []];
         this.callbacks.push ([cb, eb]);
+        if (this.started)
+            this._processCallbacks ();
     },
 
     addCallback: function (callable, args) {
@@ -98,10 +106,9 @@ function maybeDeferred (value) {
 function async (fn) {
     var process = function (result, g, deferred) {
         try {
-            result = g.next ();
             while (1) {
                 if (result instanceof Deferred) {
-                    result.addBoth (process, g, deferred);
+                    result.addBoth (process, [g, deferred]);
                     return deferred;
                 } else if (result instanceof Failure) {
                     g.throw (result);
@@ -116,15 +123,27 @@ function async (fn) {
             deferred.callback ();
             return deferred;
         } catch (e) {
+            print ("Unhandled exception: errback();");
             deferred.errback (e);
             return deferred;
         }
     }
 
     return function () {
-        return process (null, fn (), new Deferred ());
+        g = fn ();
+        g.next ();
+        return process (null, g, new Deferred ());
     }
 }
+
+(function () {
+    var flag = true;
+    var d = succeed ();
+    d.addCallback (function () {
+        flag = false;
+    });
+    assert (flag == false);
+}) ();
 
 var badger = async (function () {
     print ("entering badger function and yielding");
