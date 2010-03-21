@@ -37,15 +37,21 @@ Deferred.prototype = {
             this._processCallbacks ();
     },
 
-    addCallback: function (callable, args) {
+    addCallback: function (callable) {
+        var args = Array.prototype.slice.call(arguments);
+        args.shift ();
         this.addCallbacks (callable, args);
     },
 
-    addErrback: function (callable, args) {
+    addErrback: function (callable) {
+        var args = Array.prototype.slice.call(arguments);
+        args.shift ();
         this.addCallbacks (null, null, callable, args);
     },
 
-    addBoth: function (callable, args) {
+    addBoth: function (callable) {
+        var args = Array.prototype.slice.call(arguments);
+        args.shift ();
         // Add the same callable as a callback and an errback
         this.addCallbacks(callable, args, callable, args);
     },
@@ -118,7 +124,7 @@ function async (fn) {
         try {
             while (1) {
                 if (result instanceof Deferred) {
-                    result.addBoth (process, [g, deferred]);
+                    result.addBoth (process, g, deferred);
                     return deferred;
                 } else if (result instanceof Failure) {
                     g.throw (result);
