@@ -51,14 +51,14 @@ Deferred.prototype = {
         while (self.callbacks.length > 0) {
             // unpack an error and callback from the queue
             [cb, eb] = this.callbacks.shift ();
-            [callable, args] = isinstance(this.result, Failure) ? cb : eb;
+            [callable, args] = this.result instanceof Failure ? cb : eb;
 
             // call the callback with .result as the first argument
             args.unshift (this.result);
             this.result = callable.apply(null, args);
 
             // if it returns a deferred then add a _continue callback
-            if (isinstance(this.result, Deferred)) {
+            if (this.result instanceof Deferred) {
                 this.result.addBoth (this._continue);
                 break;
             }
@@ -70,7 +70,7 @@ Deferred.prototype = {
     },
 
     errback: function (result) {
-        if (!isinstance(result, Failure))
+        if (!(result instanceof Failure))
             result = new Failure (result);
         this._start_callbacks (result);
     },
@@ -89,7 +89,7 @@ function succeed (value) {
 }
 
 function maybeDeferred (value) {
-    if (isinstance (value, Deferred))
+    if (value instanceof Deferred)
         return value;
     else
         return succeed (value);
@@ -100,19 +100,19 @@ function async (fn) {
         try {
             result = g.next ();
             while (1) {
-                if (isinstance (result, Deferred)) {
+                if (result instanceof Deferred) {
                     result.addBoth (process, g, deferred);
                     return deferred;
-                } else if (isinstance (result, Failure)) {
+                } else if (result instanceof Failure) {
                     g.throw (result);
                 } else {
                     result = g.send (result);
                 }
             }
-        } catch (e if e == "ReturnValue") {
+        } catch (e if e instanceof ReturnValue) {
             deferred.callback (e.result); // FIXME: Need to capture return value
             return deferred;
-        } catch (e if e =="StopIteration") {
+        } catch (e if e instanceof StopIteration) {
             deferred.callback ();
             return deferred;
         } catch (e) {
