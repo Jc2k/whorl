@@ -2,6 +2,8 @@
 
 var Deferred = function () {
     this.callbacks = [];
+    this.result = null;
+    this.started = false;
 }
 
 Deferred.prototype = {
@@ -24,11 +26,46 @@ Deferred.prototype = {
         this.addCallbacks(callable, args, callable, args);
     },
 
+    _start_callbacks: function (result) {
+        if (this.started) {
+            throw "OhBugger";
+        }
+        this.started = true;
+        self._continue (result);
+    },
+
+    _continue: function (result) {
+        this.result = result;
+        this._processCallbacks ();
+        return result; // fixme: no idea why im returning result
+    },
+
+    _processCallbacks: function () {
+        while (self.callbacks.length > 0) {
+            // unpack an error and callback from the queue
+            [cb, eb] = this.callbacks.shift ();
+            [callable, args] = isinstance(this.result, Failure) ? cb : eb;
+
+            // call the callback with .result as the first argument
+            args.unshift (this.result);
+            this.result = callable.apply(null, args);
+
+            // if it returns a deferred then add a _continue callback
+            if (isinstance(this.result, Deferred)) {
+                this.result.addBoth (this._continue);
+                break;
+            }
+        }
+    },
+
     callback: function (result) {
-        // fn.apply(this, args)
+        this._start_callbacks (result);
     },
 
     errback: function (result) {
+        if (!isinstance(result, Failure))
+            result = Failure (result);
+        this._start_callbacks (result);
     },
 }
 
