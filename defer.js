@@ -111,6 +111,17 @@ function succeed (value) {
     return d;
 }
 
+function wrap (callable) {
+    return function () {
+        try {
+            var ret = callable.apply(this, arguments);
+        } catch (e) {
+            return fail (e);
+        }
+        return succeed (ret);
+    }
+}
+
 function maybeDeferred (value) {
     if (value instanceof Deferred)
         return value;
