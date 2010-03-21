@@ -3,6 +3,10 @@ var Failure = function (result) {
     this.failure = result;
 }
 
+var ReturnValue = function (result) {
+    this.value = result;
+}
+
 var Deferred = function () {
     this.callbacks = [];
     this.result = null;
@@ -106,7 +110,7 @@ function async (fn) {
                 }
             }
         } catch (e if e == "ReturnValue") {
-            deferred.callback (); // FIXME: Need to capture return value
+            deferred.callback (e.result); // FIXME: Need to capture return value
             return deferred;
         } catch (e if e =="StopIteration") {
             deferred.callback ();
