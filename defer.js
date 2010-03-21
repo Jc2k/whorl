@@ -1,21 +1,31 @@
 
 
-var Deferred = function () {}
+var Deferred = function () {
+    this.callbacks = [];
+}
+
 Deferred.prototype = {
-    addCallbacks: function (callback, args, errback, args) {
+    addCallbacks: function (callback, args, errback, eargs) {
+        cb = [callback, args ? args : []];
+        eb = [callback, eargs ? args : []];
+        this.callbacks.push ([cb, eb]);
     },
 
     addCallback: function (callable, args) {
+        this.addCallbacks (callable, args);
     },
 
     addErrback: function (callable, args) {
+        this.addCallbacks (null, null, callable, args);
     },
 
     addBoth: function (callable, args) {
         // Add the same callable as a callback and an errback
+        this.addCallbacks(callable, args, callable, args);
     },
 
     callback: function (result) {
+        // fn.apply(this, args)
     },
 
     errback: function (result) {
