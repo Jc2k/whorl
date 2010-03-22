@@ -30,14 +30,21 @@ var gio_wrapper = function (func, finish_func, pos) {
     }
 }
 
-// the goal is to do this for every library...
-// gio.File.append_to_sync = gio.File.apppend_to;
-// gio.File.append_to = gio_wrapper (gio.File.append_to_async, gio.File.append_to_finish);
+var gio_class_wrapper = function (cls) {
+    for (key in cls) {
+        if (key.substr(-6, 6) == "_async") {
+            var replace_method = key.substr(0, -6);
+            var final_method = replace_method + "_finish";
+            var sync_method = replace_method + "_sync";
 
-// or
-// gio.File.append_to_deferred = gio_wrapper();
+            if (!(final_method in cls) || sync_method in cls)
+                continue;
 
-// and then we can write code like this:
+            cls[sync_method] = cls[replace_method];
+            cls[replace_method] = gio_wrapper (cls[key], cls[final_method]);
+        }
+    }
+}
 
 var print_contents = Defer.async( function (file) {
     var in_stream = yield file.read ();
