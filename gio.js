@@ -1,8 +1,9 @@
+const Defer = imports.defer;
 //
 // This is a brain dump of something i'd like to land in GNOME gjs or seed...
 //
 
-var gio_wrapper = function (func, finish_func, pos=-1) {
+var gio_wrapper = function (func, finish_func, pos) {
     return function () {
         var args = Array.prototype.slice.call(arguments);
         var d = Deferred ();
@@ -38,7 +39,7 @@ var gio_wrapper = function (func, finish_func, pos=-1) {
 
 // and then we can write code like this:
 
-var print_contents = async( function (file) {
+var print_contents = Defer.async( function (file) {
     var in_stream = yield file.read ();
     var bytes = yield in_stream.read (4096);
     while (bytes) {

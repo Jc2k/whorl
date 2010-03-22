@@ -30,8 +30,8 @@ var Deferred = function () {
 
 Deferred.prototype = {
     addCallbacks: function (callback, args, errback, eargs) {
-        cb = [callback, args ? args : []];
-        eb = [callback, eargs ? args : []];
+        var cb = [callback, args ? args : []];
+        var eb = [callback, eargs ? args : []];
         this.callbacks.push ([cb, eb]);
         if (this.started)
             this._processCallbacks ();
@@ -96,7 +96,7 @@ Deferred.prototype = {
         if (!(result instanceof Failure))
             result = new Failure (result);
         this._start_callbacks (result);
-    },
+    }
 }
 
 function fail (value) {
@@ -156,8 +156,8 @@ function async (fn) {
     }
 
     return function () {
-        g = fn ();
-        result = g.next ();
+        var g = fn ();
+        var result = g.next ();
         return process (result, g, new Deferred ());
     }
 }
