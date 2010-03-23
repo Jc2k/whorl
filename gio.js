@@ -16,8 +16,8 @@ Repository.prototype = {
     "wrap_function": function (fn) {
         var cls = fn.parent ();
         var ns = cls.parent ();
-        var async_name = fn.@name;
-        var bare_name = fn.@name.substr(0, -6);
+        var async_name = String (fn.@name);
+        var bare_name = async_name.substr(0, async_name.length - 6);
         var finish_name = bare_name + "_finish";
         var sync_name = bare_name + "_sync";
 
@@ -74,6 +74,10 @@ Repository.prototype = {
 (function () {
     var r = new Repository ();
     r.wrap_namespace (xml.namespace);
+
+    var Gio = imports.gi.Gio;
+    print ("fill" in Gio.BufferedInputStream);
+    print ("fill_sync" in Gio.BufferedInputStream);
 }) ();
 
 var print_contents = Defer.async( function (file) {
