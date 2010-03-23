@@ -1,34 +1,5 @@
 const Defer = imports.defer;
-
-var xml = <repository>
-    <namespace name="Gio">
-      <class name="BufferedInputStream">
-        <method name="fill_async">
-          <parameters>
-          <parameter name="count" transfer-ownership="none">
-            <type name="ssize_t" />
-          </parameter>
-          <parameter name="io_priority" transfer-ownership="none">
-            <type name="int"/>
-          </parameter>
-          <parameter name="cancellable"
-                     transfer-ownership="none"
-                     allow-none="1">
-            <type name="Cancellable"/>
-          </parameter>
-          <parameter name="callback" transfer-ownership="none" closure="5">
-            <type name="AsyncReadyCallback"/>
-          </parameter>
-          <parameter name="user_data" transfer-ownership="none">
-            <type name="any"/>
-          </parameter>
-          </parameters>
-        </method>
-        <method name="fill_finish">
-        </method>
-      </class>
-    </namespace>
-  </repository>;
+const GLib = imports.gi.GLib;
 
 function Repository () { }
 Repository.prototype = {
@@ -39,6 +10,8 @@ Repository.prototype = {
         var bare_name = async_name.substr(0, async_name.length - 6);
         var finish_name = bare_name + "_finish";
         var sync_name = bare_name + "_sync";
+
+        print (cls.@name + ": " + bare_name);
 
         // for it to be wrappable, it must have a corresponding _finish method..
         if (!(cls.method.(@name == finish_name)))
@@ -99,12 +72,27 @@ Repository.prototype = {
         for each (var cls in ns.class) {
             this.wrap_class (cls);
         }
+    },
+
+    "wrap_repository": function (repo) {
+        for each (var ns in repo.namespace) {
+            this.wrap_namespace (ns);
+        }
+    },
+
+    "wrap_file": function (file) {
+        let [success, contents, len] = GLib.file_get_contents (file);
+        contents.replace (/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, ""); // bug 336551
+        var x = new XML (contents);
+        print ("xml parsed");
+        this.wrap_repository (x);
     }
 };
 
 (function () {
     var r = new Repository ();
-    r.wrap_namespace (xml.namespace);
+    //r.wrap_namespace (xml.namespace);
+    r.wrap_file ("/usr/share/gir-1.0/Gio-2.0.gir");
 
     var Gio = imports.gi.Gio;
     print ("fill" in Gio.BufferedInputStream);
