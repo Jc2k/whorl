@@ -1,4 +1,33 @@
 const Defer = imports.defer;
+
+var xml = <repository>
+    <namespace name="Gio">
+      <class name="BufferedInputStream">
+        <method name="fill_async">
+        </method>
+        <method name="fill_finish">
+        </method>
+      </class>
+    </namespace>
+  </repository>;
+
+for each (var f in xml.*.*.method) {
+    if (f.@name.match ("_async$")) {
+        if (f.@name.substr (-6, 6) != "_async")
+            continue;
+
+        var cls = f.parent ();
+
+        var async_name = f.@name
+        var finish_name = f.@name.substr(0, -6);
+
+        if (!(cls.method.(@name == finish_name)))
+            continue;
+
+        print (f.@name);
+    }
+}
+
 //
 // This is a brain dump of something i'd like to land in GNOME gjs or seed...
 //
