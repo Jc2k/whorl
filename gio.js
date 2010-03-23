@@ -11,69 +11,70 @@ var xml = <repository>
     </namespace>
   </repository>;
 
-for each (var f in xml.*.*.method) {
-    if (f.@name.match ("_async$")) {
-        if (f.@name.substr (-6, 6) != "_async")
-            continue;
-
-        var cls = f.parent ();
-
-        var async_name = f.@name
-        var finish_name = f.@name.substr(0, -6);
+function Repository () { }
+Repository.prototype = {
+    "wrap_function": function (fn) {
+        var cls = fn.parent ();
+        var ns = cls.parent ();
+        var async_name = fn.@name;
+        var bare_name = fn.@name.substr(0, -6);
+        var finish_name = bare_name + "_finish";
+        var sync_name = bare_name + "_sync";
 
         if (!(cls.method.(@name == finish_name)))
-            continue;
+            return;
 
-        print (f.@name);
-    }
-}
+        var replacement = function () {
+            var args = Array.prototype.slice.call(arguments);
+            var d = Deferred ();
 
-//
-// This is a brain dump of something i'd like to land in GNOME gjs or seed...
-//
-
-var gio_wrapper = function (func, finish_func, pos) {
-    return function () {
-        var args = Array.prototype.slice.call(arguments);
-        var d = Deferred ();
-
-        // Generate a callback to collect the result from the C library
-        var callback = function (obj, async_result) {
-            try {
-                var result = finish_func.call (this, async_result);
-            } catch (e) {
-                d.errback (e);
-                return;
+            // Generate a callback to collect the result from the C library
+            var callback = function (obj, async_result) {
+                try {
+                    var result = finish_func.call (this, async_result);
+                } catch (e) {
+                    d.errback (e);
+                    return;
+                }
+                d.callback (result);
             }
-            d.callback (result);
+
+            // need to splice something in in right pos
+            // front, back = args[:pos], args[pos:]
+            /// args = front + [callback] + back
+
+            // Actuall call the async function
+            func.apply(this, args);
+
+            return d;
         }
 
-        // need to splice something in in right pos
-        // front, back = args[:pos], args[pos:]
-        /// args = front + [callback] + back
+        var victim = imports.gi[ns.@name][cls.@name];
+        victim[sync_name] = victim[bare_name];
+        victim[bare_name] = replacement;
+    },
 
-        // Actuall call the async function
-        func.apply(this, args);
+    "wrap_class": function (cls) {
+        for each (var f in cls.method) {
+            if (f.@name.match ("_async$")) {
+                if (f.@name.substr (-6, 6) != "_async")
+                    continue;
+                this.wrap_function (f);
+            }
+        }
+    },
 
-        return d;
-    }
-}
-
-var gio_class_wrapper = function (cls) {
-    for (key in cls) {
-        if (key.substr(-6, 6) == "_async") {
-            var replace_method = key.substr(0, -6);
-            var final_method = replace_method + "_finish";
-            var sync_method = replace_method + "_sync";
-
-            if (!(final_method in cls) || sync_method in cls)
-                continue;
-
-            cls[sync_method] = cls[replace_method];
-            cls[replace_method] = gio_wrapper (cls[key], cls[final_method]);
+    "wrap_namespace": function (ns) {
+        for each (var cls in ns.class) {
+            this.wrap_class (cls);
         }
     }
-}
+};
+
+(function () {
+    var r = new Repository ();
+    r.wrap_namespace (xml.namespace);
+}) ();
 
 var print_contents = Defer.async( function (file) {
     var in_stream = yield file.read ();
