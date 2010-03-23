@@ -4,6 +4,25 @@ var xml = <repository>
     <namespace name="Gio">
       <class name="BufferedInputStream">
         <method name="fill_async">
+          <parameters>
+          <parameter name="count" transfer-ownership="none">
+            <type name="ssize_t" />
+          </parameter>
+          <parameter name="io_priority" transfer-ownership="none">
+            <type name="int"/>
+          </parameter>
+          <parameter name="cancellable"
+                     transfer-ownership="none"
+                     allow-none="1">
+            <type name="Cancellable"/>
+          </parameter>
+          <parameter name="callback" transfer-ownership="none" closure="5">
+            <type name="AsyncReadyCallback"/>
+          </parameter>
+          <parameter name="user_data" transfer-ownership="none">
+            <type name="any"/>
+          </parameter>
+          </parameters>
         </method>
         <method name="fill_finish">
         </method>
