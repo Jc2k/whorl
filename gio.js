@@ -59,8 +59,8 @@ Repository.prototype = {
     },
 
     "wrap_class": function (cls) {
-        for each (var f in cls.method) {
-            if (f.@name.match ("_async$")) {
+        for each (var f in cls) {
+            if (f.localName() == "method" && f.@name.match ("_async$")) {
                 if (f.@name.substr (-6, 6) != "_async")
                     continue;
                 this.wrap_function (f);
@@ -69,22 +69,23 @@ Repository.prototype = {
     },
 
     "wrap_namespace": function (ns) {
-        for each (var cls in ns.class) {
-            this.wrap_class (cls);
+        for each (var cls in ns) {
+            if (cls.localName() == "class")
+                this.wrap_class (cls);
         }
     },
 
     "wrap_repository": function (repo) {
-        for each (var ns in repo.namespace) {
-            this.wrap_namespace (ns);
+        for each (var ns in repo) {
+            if (ns.localName() == "namespace")
+                this.wrap_namespace (ns);
         }
     },
 
     "wrap_file": function (file) {
         let [success, contents, len] = GLib.file_get_contents (file);
-        contents.replace (/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, ""); // bug 336551
+        contents = contents.substr (contents.indexOf ("<repository"));
         var x = new XML (contents);
-        print ("xml parsed");
         this.wrap_repository (x);
     }
 };
