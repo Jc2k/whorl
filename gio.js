@@ -40,8 +40,21 @@ Repository.prototype = {
         var finish_name = bare_name + "_finish";
         var sync_name = bare_name + "_sync";
 
+        // for it to be wrappable, it must have a corresponding _finish method..
         if (!(cls.method.(@name == finish_name)))
             return;
+
+        // for now, if it doesnt take an AsyncReadyCallback we ain't gonna wrap it in magic
+        if (!(fn.parameters.parameter.type.(@name == "AsyncReadyCallback")))
+            return;
+
+        // figuring out where to splic in the callback
+        var splice_point = 0;
+        for each (var t in fn.parameters.parameter.type) {
+            if (t.@name == "AsyncReadyCallback")
+                break;
+            splice_point ++;
+        }
 
         var replacement = function () {
             var args = Array.prototype.slice.call(arguments);
@@ -58,11 +71,10 @@ Repository.prototype = {
                 d.callback (result);
             }
 
-            // need to splice something in in right pos
-            // front, back = args[:pos], args[pos:]
-            /// args = front + [callback] + back
+            // pass this callback to the _async function we are calling
+            args.splice (splice_point, 0, callback);
 
-            // Actuall call the async function
+            // Actually call the async function
             func.apply(this, args);
 
             return d;
