@@ -1,7 +1,11 @@
 const Defer = imports.defer;
 const GLib = imports.gi.GLib;
+const Gio = imports.gi.Gio;
 
-function Repository () { }
+function Repository () {
+    this.search_path = ['/usr/share/gir-1.0/'];
+}
+
 Repository.prototype = {
     "wrap_function": function (fn) {
         var cls = fn.parent ();
@@ -87,15 +91,33 @@ Repository.prototype = {
         contents = contents.substr (contents.indexOf ("<repository"));
         var x = new XML (contents);
         this.wrap_repository (x);
+    },
+
+    "require": function (namespace) {
+        var gir;
+        for (var i in this.search_path) {
+            var dir = Gio.file_new_for_path (this.search_path[i]);
+            var en = dir.enumerate_children ("standard::*", Gio.FileQueryInfoFlags.NONE, null);
+            var info;
+            while ((info = en.next_file (null)) != null) {
+                var name = info.get_name ();
+                if (name.substr(-4) != ".gir" || name.substr(0, namespace.length) != namespace)
+                    continue;
+                var child = dir.get_child (name);
+                this.wrap_file (child.get_path ());
+            }
+            en.close (null);
+        }
+
+        return imports.gi[namespace];
     }
 };
 
 (function () {
     var r = new Repository ();
     //r.wrap_namespace (xml.namespace);
-    r.wrap_file ("/usr/share/gir-1.0/Gio-2.0.gir");
-
-    var Gio = imports.gi.Gio;
+    //r.wrap_file ("/usr/share/gir-1.0/Gio-2.0.gir");
+    var Gio = r.require ("Gio");
     print ("fill" in Gio.BufferedInputStream);
     print ("fill_sync" in Gio.BufferedInputStream);
 }) ();
