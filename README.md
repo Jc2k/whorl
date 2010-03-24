@@ -23,7 +23,7 @@ It would also like to be part of the wave of JavaScript on the server - it would
 
         do_stuff_to_page (page);
 
-        return page;
+        Defer.returnValue (page);
     });
 
 Of course, it works the same for both use cases and the difference is just the integration wrappers built on top of the respective client and server side frameworks...

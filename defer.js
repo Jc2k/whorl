@@ -21,6 +21,9 @@ var Failure = function (result) {
 var ReturnValue = function (result) {
     this.value = result;
 }
+var returnValue = function (result) {
+    throw ReturnValue (result);
+}
 
 var Deferred = function () {
     this.callbacks = [];
